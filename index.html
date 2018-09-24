@@ -1,0 +1,128 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src='https://api.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js'></script>
+		<link href='https://api.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.css' rel='stylesheet' />
+		<title> The African Cup of Nations (CAN) </title>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	</head>
+	<body onload='get_data()'>
+	<style>
+		ul{
+			list-style-type:none;
+			margin:0;
+			padding:0;
+			border: 1px solid #e7e7e7;
+			background-color: #f3f3f3;
+		}
+		
+		li{
+			display:inline;
+		}
+	</style>
+	<ul>
+		<li><a href="/add"> ADD NEW DATA </a> </li>
+		<li style="float:right"><a class="active" href="/wins">BEST RECORDS</a></li>
+	</ul>
+	
+		<style>
+			.mapboxgl-popup {
+        		max-width: 400px;
+        		font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    						}
+		</style>
+
+		<div id='map' style='width: 1300px; height: 630px;'></div>
+		<script>
+			function get_data()
+			{
+				$.ajax({
+					url:'/get_data',
+					success:function(data)
+					{
+						get_features(data);
+					}
+				});
+			}
+			
+			function get_features(data)
+			{
+				send=[];
+				data=JSON.parse(data);
+				data=data.val;
+				for(j=0;j<data.length;j++)
+				{
+					icon={
+									"type":"Feature",
+									"properties":{
+										"description":data[j].host,
+										"icon":"star"
+										},
+										"geometry":{
+										"type":"Point",
+										"coordinates":data[j].coordinates
+										}
+					}
+					send.push(icon);
+				}
+				show_map(send);
+			}
+			
+			function show_map(data)
+			{
+					//for(i=0;i<data.length;i++)
+					//{
+					//	console.log(data[i].geometry.coordinates);
+					//}
+					mapboxgl.accessToken = 'pk.eyJ1IjoicHJhdHR5MTk5NyIsImEiOiJjam02ZGNoZXUwejF1M3BwOHg2ZHFsbHJzIn0.G_54S8ZbOsFlZr9w0GDJpw';
+				var map = new mapboxgl.Map({
+  				container: 'map',
+  				style: 'mapbox://styles/mapbox/streets-v10',
+  				center: [20, 0],
+  				zoom: 2.5
+				});
+				
+				map.on('load',function()
+				{
+					map.addLayer({
+					"id":"places",
+					"type":"symbol",
+						"source":{
+							"type":"geojson",
+							"data":{
+								"type":"FeatureCollection",
+								"features":data
+								}
+							},
+							"layout":{
+							"icon-image":"{icon}-15",
+							"icon-allow-overlap":true
+							}
+					});
+					
+					// CLICK EVENT
+					map.on('click','places',function(e)
+					{
+						coordinates=e.features[0].geometry.coordinates.slice();
+						description="<a href='/country/"+e.features[0].properties.description+"'>"+e.features[0].properties.description+"</a>";
+						new mapboxgl.Popup()
+							.setLngLat(coordinates)
+							.setHTML(description)
+							.addTo(map);
+					});
+					
+					// Change the cursor to a pointer(for pointable points)
+					map.on('mouseenter','places',function(){
+						map.getCanvas().style.cursor='pointer';
+					});
+					
+					// Change pointer when the mouse leaves the point
+					map.on('mouseleave','places',function(){
+						map.getCanvas().style.cursor='';
+					});
+				});
+			}
+			
+		</script>
+	</body>
+</html>
